@@ -1,10 +1,20 @@
-import requests, time, re, os
-from bs4 import BeautifulSoup
+import requests, time, os
 
-def clear():
-    os.system('clear')
+def logo():
+    os.system("clear")
+    print("""
 
-def login_and_get_token(email, password):
+██████╗ ██████╗  ██████╗ ██╗  ██╗███████╗███╗   ██╗    ██╗   ██╗
+██╔══██╗██╔══██╗██╔═══██╗██║ ██╔╝██╔════╝████╗  ██║    ██║   ██║
+██████╔╝██████╔╝██║   ██║█████╔╝ █████╗  ██╔██╗ ██║    ██║   ██║
+██╔═══╝ ██╔══██╗██║   ██║██╔═██╗ ██╔══╝  ██║╚██╗██║    ╚██╗ ██╔╝
+██║     ██║  ██║╚██████╔╝██║  ██╗███████╗██║ ╚████║     ╚████╔╝ 
+╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝      ╚═══╝  
+               => TOKEN EXTRACTOR BY BROKEN NADEEM [HU]
+
+""")
+
+def login(email, password):
     session = requests.Session()
     headers = {
         "User-Agent": "Mozilla/5.0 (Linux; Android 10; SM-A107F Build/QP1A.190711.020)"
@@ -12,61 +22,34 @@ def login_and_get_token(email, password):
 
     data = {
         "email": email,
-        "pass": password
+        "pass": password,
+        "login": "Log In"
     }
 
-    login_url = "https://mbasic.facebook.com/login.php"
-    response = session.post(login_url, data=data, headers=headers)
+    while True:
+        logo()
+        print("[~] Trying to login using: Mozilla/5.0 (Android)...")
+        response = session.post("https://mbasic.facebook.com/login", data=data, headers=headers)
 
-    if "save-device" in response.url or "home.php" in response.url:
-        print("[✓] Login Successful! Getting token...")
-        token = extract_token(session)
-        if token:
-            print(f"\n[HU] Broken Nadeem Token Found: {token}")
-            with open("token.txt", "w") as f:
-                f.write(token)
-        else:
-            print("[X] Token not found!")
-    elif "checkpoint" in response.url:
-        print("[!] Checkpoint Detected. Waiting for approval...")
-        while True:
+        if "c_user" in session.cookies.get_dict():
+            print("\n[✓] Login Success!")
+            token = session.cookies.get_dict()
+            token_str = f"c_user={token['c_user']};xs={token['xs']}"
+            print(f"[✓] Token: {token_str}")
+            open("hu_token.txt", "w").write(token_str)
+            break
+
+        elif "checkpoint" in session.cookies.get_dict():
+            print("\n[!] Checkpoint Detected. Please approve it manually.")
             time.sleep(5)
-            print("[HU] Please approval karo ID...")
-            response = session.get("https://mbasic.facebook.com/home.php")
-            if "save-device" in response.url or "home.php" in response.url:
-                print("[✓] Approved! Extracting token...")
-                token = extract_token(session)
-                if token:
-                    print(f"\n[HU] Broken Nadeem Token Found: {token}")
-                    with open("token.txt", "w") as f:
-                        f.write(token)
-                else:
-                    print("[X] Token not found!")
-                break
-    else:
-        print("[X] Login failed. Wrong credentials or blocked ID.")
+            continue
 
-def extract_token(session):
-    res = session.get("https://mbasic.facebook.com/composer/ocelot/async_loader/?publisher=feed")
-    match = re.search(r'EAAA\w+', res.text)
-    if match:
-        return match.group(0)
-    return None
-
-def main():
-    clear()
-    print("""
-██████╗ ██████╗  ██████╗ ██╗  ██╗███████╗███╗   ███╗
-██╔══██╗██╔══██╗██╔════╝ ██║  ██║██╔════╝████╗ ████║
-██████╔╝██████╔╝██║  ███╗███████║█████╗  ██╔████╔██║
-██╔═══╝ ██╔═══╝ ██║   ██║██╔══██║██╔══╝  ██║╚██╔╝██║
-██║     ██║     ╚██████╔╝██║  ██║███████╗██║ ╚═╝ ██║
-╚═╝     ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝
-             [ Broken Nadeem - HU Version ]
-""")
-    email = input("[?] Gmail: ")
-    password = input("[?] Password: ")
-    login_and_get_token(email, password)
+        else:
+            print("\n[X] Login failed. Wrong credentials or blocked ID.")
+            break
 
 if __name__ == "__main__":
-    main()
+    logo()
+    email = input("Enter Facebook Gmail/Number: ")
+    password = input("Enter Password: ")
+    login(email, password)
