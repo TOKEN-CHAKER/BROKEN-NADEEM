@@ -1,9 +1,15 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox
 import requests
 import os
+import time
 
-# Function to extract token from cookie
+def clear():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+def banner():
+    print("==========================================================")
+    print("     FB COOKIE TOKEN EXTRACTOR - BROKEN NADEEM STYLE")
+    print("==========================================================")
+
 def extract_token(cookie):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 10)',
@@ -19,52 +25,57 @@ def extract_token(cookie):
     except Exception as e:
         return f"Error: {str(e)}"
 
-# Load cookie from file
-def load_cookie():
-    filepath = filedialog.askopenfilename(title="Select Cookie File", filetypes=[("Text Files", "*.txt")])
-    if filepath:
-        with open(filepath, 'r') as f:
-            cookie_text.set(f.read().strip())
-
-# Get token and handle UI
-def get_token():
-    cookie = cookie_text.get()
-    if not cookie:
-        messagebox.showerror("Error", "Please provide a cookie")
-        return
-
+def single_cookie_mode():
+    cookie = input("\n[?] Paste your Facebook Cookie: ").strip()
+    print("[!] Extracting token, please wait...")
     token = extract_token(cookie)
     if token and token.startswith("EAA"):
-        result_text.set(f"Token Extracted:\n{token}")
+        print(f"\n[✓] Token Extracted: {token}")
         with open("fb_token.txt", "w") as f:
             f.write(token)
-        messagebox.showinfo("Success", "Token saved to fb_token.txt")
+        print("[+] Token saved to fb_token.txt")
     else:
-        result_text.set("Failed to extract token. Invalid cookie or blocked session.")
+        print("[✗] Failed to extract token. Check your cookie.")
 
-# GUI setup
-root = tk.Tk()
-root.title("FB Cookie Token Extractor - Broken Nadeem Style")
-root.geometry("600x400")
-root.resizable(False, False)
+def file_cookie_mode():
+    path = input("\n[?] Enter path to cookie file (e.g., cookies.txt): ").strip()
+    if not os.path.exists(path):
+        print("[✗] File not found.")
+        return
 
-cookie_text = tk.StringVar()
-result_text = tk.StringVar()
+    with open(path, "r") as f:
+        cookies = f.readlines()
 
-# Widgets
-frame = tk.Frame(root, padx=20, pady=20)
-frame.pack(fill=tk.BOTH, expand=True)
+    for idx, cookie in enumerate(cookies, start=1):
+        cookie = cookie.strip()
+        print(f"\n[!] Trying cookie #{idx}...")
+        token = extract_token(cookie)
+        if token and token.startswith("EAA"):
+            print(f"[✓] Token Extracted: {token}")
+            with open("fb_token.txt", "w") as f:
+                f.write(token)
+            print("[+] Token saved to fb_token.txt")
+            return
+        else:
+            print("[✗] Failed. Trying next if available...")
 
-tk.Label(frame, text="Enter Facebook Cookie:", font=("Arial", 12)).pack(anchor='w')
-tk.Entry(frame, textvariable=cookie_text, font=("Courier", 10), width=80).pack(pady=5)
+    print("\n[✗] No valid tokens found in file.")
 
-btn_frame = tk.Frame(frame)
-btn_frame.pack(pady=10)
+def main():
+    clear()
+    banner()
+    print("[1] Enter Single Cookie")
+    print("[2] Load Cookies from File")
+    print("==========================================================")
 
-tk.Button(btn_frame, text="Load from File", command=load_cookie, width=20).grid(row=0, column=0, padx=10)
-tk.Button(btn_frame, text="Extract Token", command=get_token, width=20, bg="green", fg="white").grid(row=0, column=1, padx=10)
+    choice = input("[?] Choose Option (1 or 2): ").strip()
 
-result_label = tk.Label(frame, textvariable=result_text, wraplength=550, justify="left", fg="blue", font=("Courier", 10))
-result_label.pack(pady=10)
+    if choice == "1":
+        single_cookie_mode()
+    elif choice == "2":
+        file_cookie_mode()
+    else:
+        print("[✗] Invalid option selected.")
 
-root.mainloop()
+if __name__ == "__main__":
+    main()
