@@ -21,23 +21,21 @@ def extract_token(cookie):
     }
 
     try:
-        # Sending the GET request with the cookie
         res = requests.get(url, headers=headers)
 
-        # Debug: check the response content
-        if res.status_code != 200:
-            print(f"[✗] Error: Status code {res.status_code}")
-            return None, cookie
-
-        # Try to match the token in the response
-        token_match = re.search(r'"accessToken":"(EAA\w+)"', res.text)
-        if token_match:
-            return token_match.group(1), cookie
+        if "accessToken" in res.text:
+            token_match = re.search(r'"accessToken":"(EAA\w+)"', res.text)
+            if token_match:
+                return token_match.group(1), cookie
+        elif "checkpoint" in res.text.lower():
+            print("[✗] Account checkpoint detected. Login approval needed.")
+        elif res.status_code != 200:
+            print(f"[✗] Error: HTTP Status {res.status_code} — Invalid/Expired Cookie?")
         else:
-            print("[✗] Error: Token not found in the response.")
-            return None, cookie
+            print("[✗] Token not found. Cookie might be from non-business account.")
+        return None, cookie
     except Exception as e:
-        print(f"[✗] Error: {str(e)}")
+        print(f"[✗] Exception: {str(e)}")
         return None, cookie
 
 def single_cookie_mode():
@@ -46,12 +44,11 @@ def single_cookie_mode():
     token, cookie_used = extract_token(cookie)
     if token:
         print(f"\n[✓] Token Extracted: {token}")
-        print(f"[✓] Cookie Used: {cookie_used}")
         with open("fb_token.txt", "w") as f:
             f.write(f"Cookie: {cookie_used}\nToken: {token}")
         print("[+] Token and Cookie saved to fb_token.txt")
     else:
-        print("[✗] Failed to extract token. Make sure the cookie is valid and from a Facebook business page.")
+        print("[✗] Failed to extract token. Make sure it’s a valid cookie.")
 
 def file_cookie_mode():
     path = input("\n[?] Enter path to cookie file (e.g., cookies.txt): ").strip()
@@ -68,7 +65,6 @@ def file_cookie_mode():
         token, cookie_used = extract_token(cookie)
         if token:
             print(f"[✓] Token Extracted: {token}")
-            print(f"[✓] Cookie Used: {cookie_used}")
             with open("fb_token.txt", "w") as f:
                 f.write(f"Cookie: {cookie_used}\nToken: {token}")
             print("[+] Token and Cookie saved to fb_token.txt")
