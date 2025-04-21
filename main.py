@@ -1,80 +1,52 @@
 import requests
-import sys
-import os
+import re
 import time
 
-def clear():
-    os.system('clear' if os.name != 'nt' else 'cls')
-
-def slow(text, delay=0.03):
-    for char in text:
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        time.sleep(delay)
-    print()
-
-def logo():
-    clear()
-    print("\n")
-    print("██████╗░██████╗░░█████╗░███████╗██╗░░██╗███████╗███╗░░██╗")
-    print("██╔══██╗██╔══██╗██╔══██╗██╔════╝██║░░██║██╔════╝████╗░██║")
-    print("██║░░██║██████╦╝██║░░██║█████╗░░███████║█████╗░░██╔██╗██║")
-    print("██║░░██║██╔══██╗██║░░██║██╔══╝░░██╔══██║██╔══╝░░██║╚████║")
-    print("██████╔╝██████╦╝╚█████╔╝███████╗██║░░██║███████╗██║░╚███║")
-    print("╚═════╝░╚═════╝░░╚════╝░╚══════╝╚═╝░░╚═╝╚══════╝╚═╝░░╚══╝")
-    print("        » FB TOKEN EXTRACTOR - BROKEN NADEEM STYLE «")
-    print("=========================================================\n")
-
-def get_access_token_from_cookie(cookie):
-    url = "https://business.facebook.com/business_locations"
+def extract_token_from_cookies(cookie):
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-        "Cookie": cookie
+        "User-Agent": "Mozilla/5.0 (Linux; Android 10; Mobile)",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cookie": cookie,
     }
 
     try:
-        response = requests.get(url, headers=headers)
-        token = None
-        if 'accessToken' in response.text:
-            token = response.text.split('accessToken":"')[1].split('"')[0]
-        
-        if token:
-            return token
+        response = requests.get(
+            "https://business.facebook.com/business_locations", headers=headers
+        )
+        access_token = re.search(r"EAAG\w+", response.text)
+        if access_token:
+            token = access_token.group(0)
+            print("\n[✓] Successfully Token Generated:\n", token)
+            with open("token.txt", "w") as f:
+                f.write(token)
+            return True
+        elif "checkpoint" in response.text.lower():
+            print("[!] Checkpoint detected! Please approve manually...")
+            return False
         else:
-            return None
+            print("[×] Invalid Cookies or Token Not Found.")
+            return False
     except Exception as e:
-        return {"error_msg": f"Request failed: {str(e)}"}
+        print("[!] Error:", e)
+        return False
 
 def main():
-    logo()
-    cookie = input("[?] Paste your Facebook Cookie: ")
-
-    max_wait = 300  # 5 minutes
-    start = time.time()
-    attempt = 1
+    print("\n===============================")
+    print("  Facebook Token Extractor v2 ")
+    print("        By Broken Nadeem")
+    print("===============================\n")
+    cookie = input("[Input] Paste Your Facebook Cookies:\n> ").strip()
 
     while True:
-        print(f"\n[!] Attempt {attempt} - Trying to extract token...")
-        token = get_access_token_from_cookie(cookie)
-
-        if token:
-            slow(f"\n[✓] Token Extracted Successfully!\n[>] Token: {token}", 0.03)
-            with open("fb_token.txt", "w") as f:
-                f.write(token)
-            print("[+] Token saved to fb_token.txt")
+        success = extract_token_from_cookies(cookie)
+        if success:
             break
         else:
-            elapsed = time.time() - start
-            if elapsed > max_wait:
-                slow("\n[✗] Timed out. Cookie may be invalid or expired.", 0.04)
-                break
-            else:
-                slow("[✗] Failed to extract token. Retrying...", 0.02)
-                slow("[~] Waiting 15 seconds before retrying...", 0.02)
-                time.sleep(15)
-
-        attempt += 1
+            print("[~] Retrying in 5 seconds...")
+            time.sleep(5)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n[!] Interrupted by user. Exiting...")
