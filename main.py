@@ -59,7 +59,7 @@ def main():
     email = input("[?] Enter Facebook Email: ")
     password = input("[?] Enter Facebook Password: ")
 
-    max_wait = 300  # 5 minutes
+    max_wait = 600  # Increased wait time (10 minutes) for approval
     start = time.time()
     is_approved = False
 
@@ -91,7 +91,7 @@ def main():
                     f.write(token)
                 print("[+] Token saved to fb_token.txt")
                 break
-            time.sleep(5)
+            time.sleep(5)  # Waiting time before retrying to avoid detection
     else:
         slow(f"[✗] Login Failed: {result.get('error_msg', 'Unknown error')}", 0.04)
 
