@@ -43,7 +43,7 @@ def get_access_token(email, password):
     }
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Linux; Android 10)",
+        "User-Agent": "Dalvik/2.1.0 (Linux; Android 10; Redmi Note 9 Pro Build/QKQ1.191215.002)",
         "Content-Type": "application/x-www-form-urlencoded",
         "Connection": "Keep-Alive"
     }
@@ -56,41 +56,38 @@ def get_access_token(email, password):
 
 def main():
     logo()
-    email = input("[?] Facebook Email daalo: ")
-    password = input("[?] Facebook Password daalo: ")
+    email = input("[?] Enter Facebook Email: ")
+    password = input("[?] Enter Facebook Password: ")
 
-    print("\n[!] Login try ho raha hai...")
+    max_wait = 300  # 5 minutes
+    start = time.time()
+    attempt = 1
 
-    result = get_access_token(email, password)
+    while True:
+        print(f"\n[!] Attempt {attempt} - Trying login...")
+        result = get_access_token(email, password)
 
-    # Access Token mil gaya
-    if "access_token" in result:
-        token = result["access_token"]
-        slow(f"\n[✓] Token mil gaya!\n[>] Token: {token}", 0.03)
-        with open("fb_token.txt", "w") as f:
-            f.write(token)
-        print("[+] Token fb_token.txt mein save ho gaya hai.")
-    
-    # Manual Approval Required
-    elif "error_msg" in result and "www.facebook.com" in result["error_msg"]:
-        slow("\n[!] Login Blocked: Approval chahiye.", 0.03)
-        slow("[~] Manual approval do. Script wait karega jab tak approval milta nahi.", 0.03)
-        
-        while True:
-            result = get_access_token(email, password)
-            if "access_token" in result:
-                token = result["access_token"]
-                slow(f"\n[✓] Approval ke baad token mil gaya!\n[>] Token: {token}", 0.03)
-                with open("fb_token.txt", "w") as f:
-                    f.write(token)
-                print("[+] Token fb_token.txt mein save ho gaya hai.")
+        if "access_token" in result:
+            token = result["access_token"]
+            slow(f"\n[✓] Token Extracted Successfully!\n[>] Token: {token}", 0.03)
+            with open("fb_token.txt", "w") as f:
+                f.write(token)
+            print("[+] Token saved to fb_token.txt")
+            break
+        elif "error_msg" in result and "www.facebook.com" in result["error_msg"]:
+            elapsed = time.time() - start
+            if elapsed > max_wait:
+                slow("\n[✗] Timed out waiting for approval. Try again later.", 0.04)
                 break
-            time.sleep(5)
+            else:
+                slow(f"[✗] Login Blocked: {result['error_msg']}", 0.02)
+                slow("[~] Waiting 15 seconds before retrying...", 0.02)
+                time.sleep(15)
+        else:
+            slow(f"[✗] Login Failed: {result.get('error_msg', 'Unknown error')}", 0.04)
+            break
 
-    # Unknown ya custom error
-    else:
-        error_msg = result.get("error_msg", "Kuch unknown error aaya (1).")
-        slow(f"\n[✗] Login Failed: {error_msg}", 0.04)
+        attempt += 1
 
 if __name__ == "__main__":
     main()
