@@ -1,67 +1,80 @@
 import requests
-import re
-import time
-import os
 import sys
+import os
+import time
 
-# === Logo Reveal Animation ===
-def animated_logo():
-    os.system('clear')
-    print("""
-    ███    ██  █████  ██████  ███████ ███████ ███    ███
-    ████   ██ ██   ██ ██   ██ ██      ██      ████  ████
-    ██ ██  ██ ███████ ██████  █████   █████   ██ ████ ██
-    ██  ██ ██ ██   ██ ██      ██      ██      ██  ██  ██
-    ██   ████ ██   ██ ██      ███████ ███████ ██      ██
-    -----------------------------------------------
-       [ Facebook Token Generator ] - Broken Nadeem
-       [ Powered by: Aliya x Nadeem ]
-    -----------------------------------------------
-    """)
+def clear():
+    os.system('clear' if os.name != 'nt' else 'cls')
 
-# === Loading Animation ===
-def loading(msg):
-    for i in range(3):
-        sys.stdout.write(f"\r{msg}{'.' * i}   ")
+def slow(text, delay=0.03):
+    for char in text:
+        sys.stdout.write(char)
         sys.stdout.flush()
-        time.sleep(0.5)
-    print("")
+        time.sleep(delay)
+    print()
 
-# === Token Generator from Cookie ===
-def generate_token(cookie):
+def logo():
+    clear()
+    print("\n")
+    print("██████╗░██████╗░░█████╗░███████╗██╗░░██╗███████╗███╗░░██╗")
+    print("██╔══██╗██╔══██╗██╔══██╗██╔════╝██║░░██║██╔════╝████╗░██║")
+    print("██║░░██║██████╦╝██║░░██║█████╗░░███████║█████╗░░██╔██╗██║")
+    print("██║░░██║██╔══██╗██║░░██║██╔══╝░░██╔══██║██╔══╝░░██║╚████║")
+    print("██████╔╝██████╦╝╚█████╔╝███████╗██║░░██║███████╗██║░╚███║")
+    print("╚═════╝░╚═════╝░░╚════╝░╚══════╝╚═╝░░╚═╝╚══════╝╚═╝░░╚══╝")
+    print("        » FB TOKEN EXTRACTOR - BROKEN NADEEM STYLE «")
+    print("=========================================================\n")
+
+def get_access_token_from_cookie(cookie):
+    url = "https://business.facebook.com/business_locations"
     headers = {
-        'authority': 'business.facebook.com',
-        'accept': 'application/json, text/plain, */*',
-        'accept-language': 'en-US,en;q=0.9',
-        'sec-ch-prefers-color-scheme': 'dark',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                      '(KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-        'cookie': cookie,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+        "Cookie": cookie
     }
 
     try:
-        loading("[+] Generating token, please wait")
-        response = requests.get('https://business.facebook.com/business_locations', headers=headers)
-        token = re.search(r'"accessToken":"(EAA\w+)"', response.text)
+        response = requests.get(url, headers=headers)
+        token = None
+        if 'accessToken' in response.text:
+            token = response.text.split('accessToken":"')[1].split('"')[0]
+        
+        if token:
+            return token
+        else:
+            return None
+    except Exception as e:
+        return {"error_msg": f"Request failed: {str(e)}"}
+
+def main():
+    logo()
+    cookie = input("[?] Paste your Facebook Cookie: ")
+
+    max_wait = 300  # 5 minutes
+    start = time.time()
+    attempt = 1
+
+    while True:
+        print(f"\n[!] Attempt {attempt} - Trying to extract token...")
+        token = get_access_token_from_cookie(cookie)
 
         if token:
-            access_token = token.group(1)
-            print("\n[ Aliya x Nadeem ]")
-            print("==========================================")
-            print("   Your Token Successful:")
-            print(f"\n   {access_token}")
-            print("==========================================")
+            slow(f"\n[✓] Token Extracted Successfully!\n[>] Token: {token}", 0.03)
+            with open("fb_token.txt", "w") as f:
+                f.write(token)
+            print("[+] Token saved to fb_token.txt")
+            break
         else:
-            print("\n[×] Invalid or expired cookie - Aliya x Nadeem")
+            elapsed = time.time() - start
+            if elapsed > max_wait:
+                slow("\n[✗] Timed out. Cookie may be invalid or expired.", 0.04)
+                break
+            else:
+                slow("[✗] Failed to extract token. Retrying...", 0.02)
+                slow("[~] Waiting 15 seconds before retrying...", 0.02)
+                time.sleep(15)
 
-    except Exception as e:
-        print(f"[!] Error - Aliya x Nadeem: {str(e)}")
+        attempt += 1
 
-# === Main Program ===
-if __name__ == '__main__':
-    animated_logo()
-    cookie_input = input("Paste your Facebook cookie:\n> ")
-    generate_token(cookie_input)
+if __name__ == "__main__":
+    main()
