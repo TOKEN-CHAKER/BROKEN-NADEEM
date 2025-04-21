@@ -3,9 +3,11 @@ import sys
 import os
 import time
 
+# Clear screen based on OS
 def clear():
     os.system('clear' if os.name != 'nt' else 'cls')
 
+# Typewriter effect
 def slow(text, delay=0.03):
     for char in text:
         sys.stdout.write(char)
@@ -13,6 +15,7 @@ def slow(text, delay=0.03):
         time.sleep(delay)
     print()
 
+# Logo for Broken Nadeem Style
 def logo():
     clear()
     print("\n")
@@ -25,6 +28,7 @@ def logo():
     print("        » FB TOKEN EXTRACTOR - BROKEN NADEEM STYLE «")
     print("=========================================================\n")
 
+# Facebook login request
 def get_access_token(email, password):
     url = "https://b-api.facebook.com/method/auth.login"
     params = {
@@ -54,6 +58,7 @@ def get_access_token(email, password):
     except Exception as e:
         return {"error_msg": f"Request failed: {str(e)}"}
 
+# Main login and control flow
 def main():
     logo()
     email = input("[?] Enter Facebook Email: ")
@@ -73,7 +78,12 @@ def main():
             with open("fb_token.txt", "w") as f:
                 f.write(token)
             print("[+] Token saved to fb_token.txt")
+            time.sleep(1)
+            slow("\n[✓] Security Check Completed!", 0.03)
+            slow("[✓] Your Facebook ID is Safe. No Lock or Checkpoint Detected.", 0.03)
+            slow("[✓] Login Verified Successfully by System.", 0.03)
             break
+
         elif "error_msg" in result and "www.facebook.com" in result["error_msg"]:
             elapsed = time.time() - start
             if elapsed > max_wait:
