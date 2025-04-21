@@ -1,33 +1,37 @@
 import requests
 import os
-import time
 
 def clear():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
 
 def banner():
-    print("==========================================================")
-    print("     FB COOKIE TOKEN EXTRACTOR - BROKEN NADEEM STYLE")
-    print("==========================================================")
+    print("=" * 60)
+    print("     FB COOKIE TO TOKEN EXTRACTOR - BROKEN NADEEM STYLE")
+    print("=" * 60)
 
 def extract_token(cookie):
+    url = "https://business.facebook.com/business_locations"
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 10)',
-        'Cookie': cookie
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Connection': 'keep-alive',
+        'Cookie': cookie,
     }
     try:
-        res = requests.get("https://business.facebook.com/business_locations", headers=headers)
-        if "accessToken" in res.text:
+        res = requests.get(url, headers=headers)
+        if 'accessToken' in res.text:
             token = res.text.split('accessToken":"')[1].split('"')[0]
             return token
         else:
             return None
     except Exception as e:
-        return f"Error: {str(e)}"
+        print(f"[✗] Error: {str(e)}")
+        return None
 
 def single_cookie_mode():
     cookie = input("\n[?] Paste your Facebook Cookie: ").strip()
-    print("[!] Extracting token, please wait...")
+    print("\n[!] Extracting token, please wait...")
     token = extract_token(cookie)
     if token and token.startswith("EAA"):
         print(f"\n[✓] Token Extracted: {token}")
@@ -35,7 +39,7 @@ def single_cookie_mode():
             f.write(token)
         print("[+] Token saved to fb_token.txt")
     else:
-        print("[✗] Failed to extract token. Check your cookie.")
+        print("[✗] Failed to extract token. Make sure the cookie is valid and from Facebook business page.")
 
 def file_cookie_mode():
     path = input("\n[?] Enter path to cookie file (e.g., cookies.txt): ").strip()
@@ -66,8 +70,7 @@ def main():
     banner()
     print("[1] Enter Single Cookie")
     print("[2] Load Cookies from File")
-    print("==========================================================")
-
+    print("=" * 60)
     choice = input("[?] Choose Option (1 or 2): ").strip()
 
     if choice == "1":
