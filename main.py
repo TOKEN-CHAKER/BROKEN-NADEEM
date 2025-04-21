@@ -77,24 +77,23 @@ def main():
         elapsed = time.time() - start
         if not is_approved:
             slow("[✗] Login Blocked: User must verify their account.", 0.03)
-            slow("[~] Please approve your login. The system will wait until approved.", 0.03)
+            slow("[~] Waiting for approval. The system will not stop until approved.", 0.03)
             is_approved = True
-        elif elapsed > max_wait:
-            slow("\n[✗] Timed out waiting for approval. Try again later.", 0.04)
+        
+        # Continuously check every 5 seconds for approval
+        while elapsed < max_wait:
+            time.sleep(5)  # Check every 5 seconds
+            result = get_access_token(email, password)  # Only check for approval, no re-login
+            if "access_token" in result:
+                token = result["access_token"]
+                slow(f"\n[✓] Token Extracted Successfully!\n[>] Token: {token}", 0.03)
+                with open("fb_token.txt", "w") as f:
+                    f.write(token)
+                print("[+] Token saved to fb_token.txt")
+                break
+            elapsed = time.time() - start
         else:
-            slow(f"[✗] Login Blocked: {result['error_msg']}", 0.02)
-            slow("[~] Waiting for approval. The system will continue once approved.", 0.02)
-            while elapsed < max_wait:
-                time.sleep(5)  # Check every 5 seconds for approval
-                result = get_access_token(email, password)  # Only check for approval, no re-login
-                if "access_token" in result:
-                    token = result["access_token"]
-                    slow(f"\n[✓] Token Extracted Successfully!\n[>] Token: {token}", 0.03)
-                    with open("fb_token.txt", "w") as f:
-                        f.write(token)
-                    print("[+] Token saved to fb_token.txt")
-                    break
-                elapsed = time.time() - start
+            slow("\n[✗] Timed out waiting for approval. Try again later.", 0.04)
     else:
         slow(f"[✗] Login Failed: {result.get('error_msg', 'Unknown error')}", 0.04)
 
