@@ -63,8 +63,8 @@ def main():
     start = time.time()
     is_approved = False
 
-    # First attempt to log in
-    print("\n[!] Trying login...")
+    # Only one login attempt
+    print("[!] Trying login...")
     result = get_access_token(email, password)
 
     if "access_token" in result:
@@ -74,16 +74,16 @@ def main():
             f.write(token)
         print("[+] Token saved to fb_token.txt")
     elif "error_msg" in result and "www.facebook.com" in result["error_msg"]:
-        elapsed = time.time() - start
-        if not is_approved:
-            slow("[✗] Login Blocked: User must verify their account.", 0.03)
-            slow("[~] Waiting for approval. The system will not stop until approved.", 0.03)
-            is_approved = True
-        
-        # Continuously check every 5 seconds for approval
-        while elapsed < max_wait:
-            time.sleep(5)  # Check every 5 seconds
-            result = get_access_token(email, password)  # Only check for approval, no re-login
+        # Wait for approval
+        print("[✗] Login Blocked: User must verify their account.")
+        slow("[~] Waiting for approval... This process will continue until approval is granted.", 0.03)
+
+        while True:
+            elapsed = time.time() - start
+            if elapsed > max_wait:
+                slow("\n[✗] Timed out waiting for approval. Try again later.", 0.04)
+                break
+            result = get_access_token(email, password)
             if "access_token" in result:
                 token = result["access_token"]
                 slow(f"\n[✓] Token Extracted Successfully!\n[>] Token: {token}", 0.03)
@@ -91,9 +91,7 @@ def main():
                     f.write(token)
                 print("[+] Token saved to fb_token.txt")
                 break
-            elapsed = time.time() - start
-        else:
-            slow("\n[✗] Timed out waiting for approval. Try again later.", 0.04)
+            time.sleep(5)
     else:
         slow(f"[✗] Login Failed: {result.get('error_msg', 'Unknown error')}", 0.04)
 
