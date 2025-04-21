@@ -79,15 +79,15 @@ def main():
             elapsed = time.time() - start
             if not is_approved:
                 slow("[✗] Login Blocked: User must verify their account.", 0.03)
-                slow("[~] Please approve your login. The system will retry automatically once approved.", 0.03)
+                slow("[~] Please approve your login. The system will wait until approved.", 0.03)
                 is_approved = True
             elif elapsed > max_wait:
                 slow("\n[✗] Timed out waiting for approval. Try again later.", 0.04)
                 break
             else:
                 slow(f"[✗] Login Blocked: {result['error_msg']}", 0.02)
-                slow("[~] Waiting 15 seconds before retrying...", 0.02)
-                time.sleep(15)
+                slow("[~] Waiting for approval. The system will continue once approved.", 0.02)
+                time.sleep(5)  # Check every 5 seconds for approval
         else:
             slow(f"[✗] Login Failed: {result.get('error_msg', 'Unknown error')}", 0.04)
             break
