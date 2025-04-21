@@ -3,9 +3,11 @@ import sys
 import os
 import time
 
+# Clear screen based on OS
 def clear():
     os.system('clear' if os.name != 'nt' else 'cls')
 
+# Typewriter effect
 def slow(text, delay=0.03):
     for char in text:
         sys.stdout.write(char)
@@ -13,6 +15,7 @@ def slow(text, delay=0.03):
         time.sleep(delay)
     print()
 
+# Logo for Broken Nadeem style
 def logo():
     clear()
     print("\n")
@@ -25,6 +28,7 @@ def logo():
     print("        » FB TOKEN EXTRACTOR - BROKEN NADEEM STYLE «")
     print("=========================================================\n")
 
+# Facebook login request
 def get_token(email, password):
     url = "https://b-api.facebook.com/method/auth.login"
     params = {
@@ -52,6 +56,7 @@ def get_token(email, password):
     except Exception as e:
         return {"error_msg": f"Connection failed: {str(e)}"}
 
+# Checkpoint handling with retry
 def wait_for_approval(email, password):
     approved_once = False
     while True:
@@ -77,6 +82,7 @@ def wait_for_approval(email, password):
         else:
             slow("[✗] Unexpected error or login fail. Retry in 5s...", 0.03)
 
+# Main login and control flow
 def main():
     logo()
     email = input("[?] Facebook Email: ")
@@ -90,7 +96,8 @@ def main():
 
         if "access_token" in result:
             token = result["access_token"]
-            slow(f"\n[✓] Token mil gaya!\n[>] Token: {token}", 0.03)
+            slow(f"\n[✓] Login success without checkpoint!", 0.03)
+            slow(f"[>] Token: {token}", 0.03)
             with open("fb_token.txt", "w") as f:
                 f.write(token)
             print("[+] Token 'fb_token.txt' mein save ho gaya hai.")
