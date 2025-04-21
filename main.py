@@ -1,7 +1,7 @@
 import requests
 import re
-import os
 import time
+import os
 
 def show_logo():
     os.system('clear')
@@ -9,12 +9,12 @@ def show_logo():
 \033[1;32m╔══════════════════════════════════════╗
 ║         𝗕𝗿𝗼𝗸𝗲𝗻 𝗡𝗮𝗱𝗲𝗲𝗺 𝗧𝗼𝗸𝗲𝗻 𝗧𝗼𝗼𝗹         ║
 ╠══════════════════════════════════════╣
-║     FB EAAB Token | Termux Ready     ║
-║     Status: VALID + LONG-LIVED       ║
+║     Real EAAB/EAAC Token Extractor   ║
+║       Status: VALID & CHECKED        ║
 ╚══════════════════════════════════════╝
 \033[0m""")
 
-def extract_eaab_token(cookie):
+def extract_token(cookie):
     headers = {
         "User-Agent": "Mozilla/5.0 (Linux; Android 10; Mobile)",
         "Accept-Language": "en-US,en;q=0.9",
@@ -22,38 +22,34 @@ def extract_eaab_token(cookie):
     }
 
     try:
-        res = requests.get("https://mbasic.facebook.com/settings/apps/tabbed/", headers=headers)
-        token_match = re.search(r"EAAB\w+", res.text)
-        if token_match:
-            token = token_match.group(0)
+        res = requests.get("https://m.facebook.com/composer/ocelot/async_loader/?publisher=feed", headers=headers)
+        token = re.search(r'"accessToken\\":\\"(EAA\w+)', res.text)
+        if token:
+            token = token.group(1)
             verify = requests.get(f"https://graph.facebook.com/me?fields=id,name&access_token={token}").json()
             if 'name' in verify:
-                print(f"\n\033[1;32m[✓] Valid Token Found:\033[0m\n{token}")
+                print(f"\033[1;32m[✓] Token:\033[0m {token}")
                 print(f"\033[1;36m[•] Name:\033[0m {verify['name']}")
                 print(f"\033[1;36m[•] ID:\033[0m {verify['id']}")
                 with open("token.txt", "w") as f:
                     f.write(token)
                 return True
             else:
-                print("\033[1;31m[×] Token extracted but invalid/expired.\033[0m")
-                return False
+                print("\033[1;31m[×] Token found but invalid/expired.\033[0m")
         elif "checkpoint" in res.text.lower():
-            print("\033[1;33m[!] Checkpoint Detected! Please approve manually.\033[0m")
-            return False
+            print("\033[1;33m[!] Checkpoint! Please approve manually...\033[0m")
         else:
-            print("\033[1;31m[×] Token not found. Try different cookie.\033[0m")
-            return False
+            print("\033[1;31m[×] Token not found. Invalid Cookie.\033[0m")
     except Exception as e:
         print(f"\033[1;31m[!] Error:\033[0m {str(e)}")
-        return False
+    return False
 
 def main():
     show_logo()
-    cookie = input("\n\033[1;36m[Input] Paste Your Facebook Cookie:\033[0m\n> ").strip()
-
+    cookie = input("\033[1;36m[Input] Paste Facebook Cookie:\033[0m\n> ").strip()
+    
     while True:
-        success = extract_eaab_token(cookie)
-        if success:
+        if extract_token(cookie):
             print("\033[1;32m[✓] Token Saved to token.txt\033[0m")
             break
         else:
