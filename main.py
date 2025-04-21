@@ -1,5 +1,6 @@
 import requests
 import os
+import re
 
 def clear():
     os.system("cls" if os.name == "nt" else "clear")
@@ -18,12 +19,22 @@ def extract_token(cookie):
         'Connection': 'keep-alive',
         'Cookie': cookie,
     }
+
     try:
+        # Sending the GET request with the cookie
         res = requests.get(url, headers=headers)
-        if 'accessToken' in res.text:
-            token = res.text.split('accessToken":"')[1].split('"')[0]
-            return token
+
+        # Debug: check the response content
+        if res.status_code != 200:
+            print(f"[✗] Error: Status code {res.status_code}")
+            return None
+
+        # Try to match the token in the response
+        token_match = re.search(r'"accessToken":"(EAA\w+)"', res.text)
+        if token_match:
+            return token_match.group(1)
         else:
+            print("[✗] Error: Token not found in the response.")
             return None
     except Exception as e:
         print(f"[✗] Error: {str(e)}")
@@ -33,7 +44,7 @@ def single_cookie_mode():
     cookie = input("\n[?] Paste your Facebook Cookie: ").strip()
     print("\n[!] Extracting token, please wait...")
     token = extract_token(cookie)
-    if token and token.startswith("EAA"):
+    if token:
         print(f"\n[✓] Token Extracted: {token}")
         with open("fb_token.txt", "w") as f:
             f.write(token)
@@ -54,7 +65,7 @@ def file_cookie_mode():
         cookie = cookie.strip()
         print(f"\n[!] Trying cookie #{idx}...")
         token = extract_token(cookie)
-        if token and token.startswith("EAA"):
+        if token:
             print(f"[✓] Token Extracted: {token}")
             with open("fb_token.txt", "w") as f:
                 f.write(token)
