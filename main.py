@@ -25,7 +25,7 @@ def logo():
     print("        » FB TOKEN EXTRACTOR - BROKEN NADEEM STYLE «")
     print("=========================================================\n")
 
-def get_access_token(email, password):
+def get_token(email, password):
     url = "https://b-api.facebook.com/method/auth.login"
     params = {
         "format": "json",
@@ -38,56 +38,64 @@ def get_access_token(email, password):
         "meta_inf_fbmeta": "",
         "access_token": "350685531728|62f8ce9f74b12f84c123cc23437a4a32",
         "locale": "en_US",
-        "client_country_code": "US",
         "method": "auth.login"
     }
-
     headers = {
-        "User-Agent": "Dalvik/2.1.0 (Linux; Android 10; Redmi Note 9 Pro Build/QKQ1.191215.002)",
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Connection": "Keep-Alive"
+        "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 10; Redmi Note 8 Build/QKQ1)",
+        "Accept-Encoding": "gzip, deflate",
+        "Connection": "keep-alive",
+        "Content-Type": "application/x-www-form-urlencoded"
     }
-
     try:
-        response = requests.get(url, params=params, headers=headers)
-        return response.json()
+        r = requests.get(url, params=params, headers=headers)
+        return r.json()
     except Exception as e:
-        return {"error_msg": f"Request failed: {str(e)}"}
+        return {"error_msg": f"Connection failed: {str(e)}"}
 
 def main():
     logo()
-    email = input("[?] Enter Facebook Email: ")
-    password = input("[?] Enter Facebook Password: ")
+    email = input("[?] Facebook Email: ")
+    password = input("[?] Facebook Password: ")
 
-    max_wait = 300  # 5 minutes
-    start = time.time()
-    attempt = 1
+    print("\n[!] Login try ho raha hai...")
 
-    while True:
-        print(f"\n[!] Attempt {attempt} - Trying login...")
-        result = get_access_token(email, password)
+    retry_count = 0
+    while retry_count < 5:
+        result = get_token(email, password)
 
         if "access_token" in result:
             token = result["access_token"]
-            slow(f"\n[✓] Token Extracted Successfully!\n[>] Token: {token}", 0.03)
+            slow(f"\n[✓] Token mil gaya!\n[>] Token: {token}", 0.03)
             with open("fb_token.txt", "w") as f:
                 f.write(token)
-            print("[+] Token saved to fb_token.txt")
-            break
-        elif "error_msg" in result and "www.facebook.com" in result["error_msg"]:
-            elapsed = time.time() - start
-            if elapsed > max_wait:
-                slow("\n[✗] Timed out waiting for approval. Try again later.", 0.04)
-                break
-            else:
-                slow(f"[✗] Login Blocked: {result['error_msg']}", 0.02)
-                slow("[~] Waiting 15 seconds before retrying...", 0.02)
-                time.sleep(15)
-        else:
-            slow(f"[✗] Login Failed: {result.get('error_msg', 'Unknown error')}", 0.04)
-            break
+            print("[+] Token 'fb_token.txt' mein save ho gaya hai.")
+            return
 
-        attempt += 1
+        elif "error_msg" in result:
+            error = result["error_msg"]
+            if "www.facebook.com" in error:
+                slow("[!] Account pe checkpoint laga hua hai.", 0.04)
+                slow("[~] Manual approval do. Script har 5 second mein check karega...", 0.04)
+                while True:
+                    time.sleep(5)
+                    result = get_token(email, password)
+                    if "access_token" in result:
+                        token = result["access_token"]
+                        slow(f"\n[✓] Approval ke baad token mil gaya!\n[>] Token: {token}", 0.03)
+                        with open("fb_token.txt", "w") as f:
+                            f.write(token)
+                        print("[+] Token 'fb_token.txt' mein save ho gaya hai.")
+                        return
+            else:
+                retry_count += 1
+                slow(f"[✗] Login Failed: {error} (try: {retry_count})", 0.03)
+                time.sleep(2)
+        else:
+            retry_count += 1
+            slow(f"[✗] Unknown response mila. Retry kar rahe hain... ({retry_count})", 0.03)
+            time.sleep(2)
+
+    print("\n[✗] 5 baar try kar liya. Login nahi ho paaya. Check karo credentials ya Facebook restriction.")
 
 if __name__ == "__main__":
     main()
