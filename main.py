@@ -1,103 +1,70 @@
+import tkinter as tk
+from tkinter import filedialog, messagebox
 import requests
-import sys
 import os
-import time
 
-# Clear screen based on OS
-def clear():
-    os.system('clear' if os.name != 'nt' else 'cls')
-
-# Typewriter effect
-def slow(text, delay=0.03):
-    for char in text:
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        time.sleep(delay)
-    print()
-
-# Logo for Broken Nadeem Style
-def logo():
-    clear()
-    print("\n")
-    print("██████╗░██████╗░░█████╗░███████╗██╗░░██╗███████╗███╗░░██╗")
-    print("██╔══██╗██╔══██╗██╔══██╗██╔════╝██║░░██║██╔════╝████╗░██║")
-    print("██║░░██║██████╦╝██║░░██║█████╗░░███████║█████╗░░██╔██╗██║")
-    print("██║░░██║██╔══██╗██║░░██║██╔══╝░░██╔══██║██╔══╝░░██║╚████║")
-    print("██████╔╝██████╦╝╚█████╔╝███████╗██║░░██║███████╗██║░╚███║")
-    print("╚═════╝░╚═════╝░░╚════╝░╚══════╝╚═╝░░╚═╝╚══════╝╚═╝░░╚══╝")
-    print("        » FB TOKEN EXTRACTOR - BROKEN NADEEM STYLE «")
-    print("=========================================================\n")
-
-# Facebook login request
-def get_access_token(email, password):
-    url = "https://b-api.facebook.com/method/auth.login"
-    params = {
-        "format": "json",
-        "email": email,
-        "password": password,
-        "credentials_type": "password",
-        "generate_session_cookies": 1,
-        "error_detail_type": "button_with_disabled",
-        "source": "device_based_login",
-        "meta_inf_fbmeta": "",
-        "access_token": "350685531728|62f8ce9f74b12f84c123cc23437a4a32",
-        "locale": "en_US",
-        "client_country_code": "US",
-        "method": "auth.login"
-    }
-
+# Function to extract token from cookie
+def extract_token(cookie):
     headers = {
-        "User-Agent": "Dalvik/2.1.0 (Linux; Android 10; Redmi Note 9 Pro Build/QKQ1.191215.002)",
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Connection": "Keep-Alive"
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 10)',
+        'Cookie': cookie
     }
-
     try:
-        response = requests.get(url, params=params, headers=headers)
-        return response.json()
-    except Exception as e:
-        return {"error_msg": f"Request failed: {str(e)}"}
-
-# Main login and control flow
-def main():
-    logo()
-    email = input("[?] Enter Facebook Email: ")
-    password = input("[?] Enter Facebook Password: ")
-
-    max_wait = 300  # 5 minutes
-    start = time.time()
-    attempt = 1
-
-    while True:
-        print(f"\n[!] Attempt {attempt} - Trying login...")
-        result = get_access_token(email, password)
-
-        if "access_token" in result:
-            token = result["access_token"]
-            slow(f"\n[✓] Token Extracted Successfully!\n[>] Token: {token}", 0.03)
-            with open("fb_token.txt", "w") as f:
-                f.write(token)
-            print("[+] Token saved to fb_token.txt")
-            time.sleep(1)
-            slow("\n[✓] Security Check Completed!", 0.03)
-            slow("[✓] Your Facebook ID is Safe. No Lock or Checkpoint Detected.", 0.03)
-            slow("[✓] Login Verified Successfully by System.", 0.03)
-            break
-
-        elif "error_msg" in result and "www.facebook.com" in result["error_msg"]:
-            elapsed = time.time() - start
-            if elapsed > max_wait:
-                slow("\n[✗] Timed out waiting for approval. Try again later.", 0.04)
-                break
-            else:
-                slow(f"[✗] Login Blocked: {result['error_msg']}", 0.02)
-                slow("[~] Waiting 15 seconds before retrying...", 0.02)
-                time.sleep(15)
+        res = requests.get("https://business.facebook.com/business_locations", headers=headers)
+        if "accessToken" in res.text:
+            token = res.text.split('accessToken":"')[1].split('"')[0]
+            return token
         else:
-            slow(f"[✗] Login Failed: {result.get('error_msg', 'Unknown error')}", 0.04)
-            break
+            return None
+    except Exception as e:
+        return f"Error: {str(e)}"
 
-        attempt += 1
+# Load cookie from file
+def load_cookie():
+    filepath = filedialog.askopenfilename(title="Select Cookie File", filetypes=[("Text Files", "*.txt")])
+    if filepath:
+        with open(filepath, 'r') as f:
+            cookie_text.set(f.read().strip())
 
-if __name__ == "__main__":
-    main()
+# Get token and handle UI
+def get_token():
+    cookie = cookie_text.get()
+    if not cookie:
+        messagebox.showerror("Error", "Please provide a cookie")
+        return
+
+    token = extract_token(cookie)
+    if token and token.startswith("EAA"):
+        result_text.set(f"Token Extracted:\n{token}")
+        with open("fb_token.txt", "w") as f:
+            f.write(token)
+        messagebox.showinfo("Success", "Token saved to fb_token.txt")
+    else:
+        result_text.set("Failed to extract token. Invalid cookie or blocked session.")
+
+# GUI setup
+root = tk.Tk()
+root.title("FB Cookie Token Extractor - Broken Nadeem Style")
+root.geometry("600x400")
+root.resizable(False, False)
+
+cookie_text = tk.StringVar()
+result_text = tk.StringVar()
+
+# Widgets
+frame = tk.Frame(root, padx=20, pady=20)
+frame.pack(fill=tk.BOTH, expand=True)
+
+tk.Label(frame, text="Enter Facebook Cookie:", font=("Arial", 12)).pack(anchor='w')
+tk.Entry(frame, textvariable=cookie_text, font=("Courier", 10), width=80).pack(pady=5)
+
+btn_frame = tk.Frame(frame)
+btn_frame.pack(pady=10)
+
+tk.Button(btn_frame, text="Load from File", command=load_cookie, width=20).grid(row=0, column=0, padx=10)
+tk.Button(btn_frame, text="Extract Token", command=get_token, width=20, bg="green", fg="white").grid(row=0, column=1, padx=10)
+
+result_label = tk.Label(frame, textvariable=result_text, wraplength=550, justify="left", fg="blue", font=("Courier", 10))
+result_label.pack(pady=10)
+
+root.mainloop()
