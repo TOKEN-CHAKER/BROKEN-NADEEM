@@ -7,19 +7,17 @@ import sys
 # === Logo Reveal Animation ===
 def animated_logo():
     os.system('clear')
-    logo_lines = [
-        " ███    ██  █████  ██████  ███████ ███████ ███    ███ ",
-        " ████   ██ ██   ██ ██   ██ ██      ██      ████  ████ ",
-        " ██ ██  ██ ███████ ██████  █████   █████   ██ ████ ██ ",
-        " ██  ██ ██ ██   ██ ██      ██      ██      ██  ██  ██ ",
-        " ██   ████ ██   ██ ██      ███████ ███████ ██      ██ ",
-    ]
-    for line in logo_lines:
-        print(line)
-        time.sleep(0.1)
-    print("\n  [ Facebook Token Generator ] - Broken Nadeem")
-    print("  [ Powered by: Aliya x Nadeem ]\n")
-    print("====================================================")
+    print("""
+    ███    ██  █████  ██████  ███████ ███████ ███    ███
+    ████   ██ ██   ██ ██   ██ ██      ██      ████  ████
+    ██ ██  ██ ███████ ██████  █████   █████   ██ ████ ██
+    ██  ██ ██ ██   ██ ██      ██      ██      ██  ██  ██
+    ██   ████ ██   ██ ██      ███████ ███████ ██      ██
+    -----------------------------------------------
+       [ Facebook Token Generator ] - Broken Nadeem
+       [ Powered by: Aliya x Nadeem ]
+    -----------------------------------------------
+    """)
 
 # === Loading Animation ===
 def loading(msg):
@@ -32,15 +30,16 @@ def loading(msg):
 # === Token Generator from Cookie ===
 def generate_token(cookie):
     headers = {
-        'Host': 'business.facebook.com',
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 10)',
-        'Accept': '*/*',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Origin': 'https://business.facebook.com',
-        'Connection': 'keep-alive',
-        'Referer': 'https://business.facebook.com/',
-        'Cookie': cookie,
+        'authority': 'business.facebook.com',
+        'accept': 'application/json, text/plain, */*',
+        'accept-language': 'en-US,en;q=0.9',
+        'sec-ch-prefers-color-scheme': 'dark',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                      '(KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+        'cookie': cookie,
     }
 
     try:
