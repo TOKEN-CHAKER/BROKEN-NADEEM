@@ -72,7 +72,7 @@ def wait_for_approval(email, password):
             with open("fb_token.txt", "w") as f:
                 f.write(token)
             print("[+] Token 'fb_token.txt' mein save ho gaya hai.")
-            break
+            sys.exit()
         elif "error_msg" in result and "www.facebook.com" in result["error_msg"]:
             if not approved_once:
                 slow("[!] Checkpoint detected, approval ka wait ho raha hai...", 0.03)
