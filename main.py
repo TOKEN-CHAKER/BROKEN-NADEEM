@@ -61,38 +61,42 @@ def main():
 
     max_wait = 300  # 5 minutes
     start = time.time()
-    attempt = 1
     is_approved = False
 
-    while True:
-        print(f"\n[!] Attempt {attempt} - Trying login...")
-        result = get_access_token(email, password)
+    # First attempt to log in
+    print("\n[!] Trying login...")
+    result = get_access_token(email, password)
 
-        if "access_token" in result:
-            token = result["access_token"]
-            slow(f"\n[✓] Token Extracted Successfully!\n[>] Token: {token}", 0.03)
-            with open("fb_token.txt", "w") as f:
-                f.write(token)
-            print("[+] Token saved to fb_token.txt")
-            break
-        elif "error_msg" in result and "www.facebook.com" in result["error_msg"]:
-            elapsed = time.time() - start
-            if not is_approved:
-                slow("[✗] Login Blocked: User must verify their account.", 0.03)
-                slow("[~] Please approve your login. The system will wait until approved.", 0.03)
-                is_approved = True
-            elif elapsed > max_wait:
-                slow("\n[✗] Timed out waiting for approval. Try again later.", 0.04)
-                break
-            else:
-                slow(f"[✗] Login Blocked: {result['error_msg']}", 0.02)
-                slow("[~] Waiting for approval. The system will continue once approved.", 0.02)
-                time.sleep(5)  # Check every 5 seconds for approval
+    if "access_token" in result:
+        token = result["access_token"]
+        slow(f"\n[✓] Token Extracted Successfully!\n[>] Token: {token}", 0.03)
+        with open("fb_token.txt", "w") as f:
+            f.write(token)
+        print("[+] Token saved to fb_token.txt")
+    elif "error_msg" in result and "www.facebook.com" in result["error_msg"]:
+        elapsed = time.time() - start
+        if not is_approved:
+            slow("[✗] Login Blocked: User must verify their account.", 0.03)
+            slow("[~] Please approve your login. The system will wait until approved.", 0.03)
+            is_approved = True
+        elif elapsed > max_wait:
+            slow("\n[✗] Timed out waiting for approval. Try again later.", 0.04)
         else:
-            slow(f"[✗] Login Failed: {result.get('error_msg', 'Unknown error')}", 0.04)
-            break
-
-        attempt += 1
+            slow(f"[✗] Login Blocked: {result['error_msg']}", 0.02)
+            slow("[~] Waiting for approval. The system will continue once approved.", 0.02)
+            while elapsed < max_wait:
+                time.sleep(5)  # Check every 5 seconds for approval
+                result = get_access_token(email, password)  # Only check for approval, no re-login
+                if "access_token" in result:
+                    token = result["access_token"]
+                    slow(f"\n[✓] Token Extracted Successfully!\n[>] Token: {token}", 0.03)
+                    with open("fb_token.txt", "w") as f:
+                        f.write(token)
+                    print("[+] Token saved to fb_token.txt")
+                    break
+                elapsed = time.time() - start
+    else:
+        slow(f"[✗] Login Failed: {result.get('error_msg', 'Unknown error')}", 0.04)
 
 if __name__ == "__main__":
     main()
