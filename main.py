@@ -1,93 +1,48 @@
 import requests
-import os
 import re
+import os
 
 def clear():
     os.system("cls" if os.name == "nt" else "clear")
 
 def banner():
-    print("=" * 60)
+    print("\033[1;35m" + "=" * 60)
     print("     FB COOKIE TO TOKEN EXTRACTOR - BROKEN NADEEM STYLE")
-    print("=" * 60)
+    print("=" * 60 + "\033[0m")
 
 def extract_token(cookie):
-    url = "https://business.facebook.com/business_locations"
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Connection': 'keep-alive',
-        'Cookie': cookie,
+        "Host": "business.facebook.com",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Connection": "keep-alive",
+        "Cookie": cookie
     }
 
+    url = "https://business.facebook.com/business_locations"
+
     try:
-        res = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers)
 
-        if "accessToken" in res.text:
-            token_match = re.search(r'"accessToken":"(EAA\w+)"', res.text)
-            if token_match:
-                return token_match.group(1), cookie
-        elif "checkpoint" in res.text.lower():
-            print("[✗] Account checkpoint detected. Login approval needed.")
-        elif res.status_code != 200:
-            print(f"[✗] Error: HTTP Status {res.status_code} — Invalid/Expired Cookie?")
-        else:
-            print("[✗] Token not found. Cookie might be from non-business account.")
-        return None, cookie
-    except Exception as e:
-        print(f"[✗] Exception: {str(e)}")
-        return None, cookie
-
-def single_cookie_mode():
-    cookie = input("\n[?] Paste your Facebook Cookie: ").strip()
-    print("\n[!] Extracting token, please wait...")
-    token, cookie_used = extract_token(cookie)
-    if token:
-        print(f"\n[✓] Token Extracted: {token}")
-        with open("fb_token.txt", "w") as f:
-            f.write(f"Cookie: {cookie_used}\nToken: {token}")
-        print("[+] Token and Cookie saved to fb_token.txt")
-    else:
-        print("[✗] Failed to extract token. Make sure it’s a valid cookie.")
-
-def file_cookie_mode():
-    path = input("\n[?] Enter path to cookie file (e.g., cookies.txt): ").strip()
-    if not os.path.exists(path):
-        print("[✗] File not found.")
-        return
-
-    with open(path, "r") as f:
-        cookies = f.readlines()
-
-    for idx, cookie in enumerate(cookies, start=1):
-        cookie = cookie.strip()
-        print(f"\n[!] Trying cookie #{idx}...")
-        token, cookie_used = extract_token(cookie)
-        if token:
-            print(f"[✓] Token Extracted: {token}")
+        if "accessToken" in response.text:
+            token = re.search(r'"accessToken":"(EAA\w+)"', response.text).group(1)
+            print(f"\033[1;32m[✓] Successfully Token Generated: {token}\033[0m")
             with open("fb_token.txt", "w") as f:
-                f.write(f"Cookie: {cookie_used}\nToken: {token}")
-            print("[+] Token and Cookie saved to fb_token.txt")
-            return
+                f.write(f"Cookie: {cookie}\nToken: {token}")
+            print("\033[1;34m[+] Token saved to fb_token.txt\033[0m")
         else:
-            print("[✗] Failed. Trying next if available...")
-
-    print("\n[✗] No valid tokens found in file.")
+            print("\033[1;31m[✗] Token not found! Cookie may be invalid or need checkpoint approval.\033[0m")
+    except Exception as e:
+        print(f"\033[1;31m[✗] Error: {str(e)}\033[0m")
 
 def main():
     clear()
     banner()
-    print("[1] Enter Single Cookie")
-    print("[2] Load Cookies from File")
-    print("=" * 60)
-    choice = input("[?] Choose Option (1 or 2): ").strip()
-
-    if choice == "1":
-        single_cookie_mode()
-    elif choice == "2":
-        file_cookie_mode()
-    else:
-        print("[✗] Invalid option selected.")
+    print("\033[1;36m[Input] Enter Your Facebook Cookie:\033[0m")
+    cookie = input(">> ").strip()
+    print("\n\033[1;33m[!] Extracting token, please wait...\033[0m\n")
+    extract_token(cookie)
 
 if __name__ == "__main__":
     main()
