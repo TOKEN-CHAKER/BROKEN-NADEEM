@@ -27,30 +27,31 @@ def extract_token(cookie):
         # Debug: check the response content
         if res.status_code != 200:
             print(f"[✗] Error: Status code {res.status_code}")
-            return None
+            return None, cookie
 
         # Try to match the token in the response
         token_match = re.search(r'"accessToken":"(EAA\w+)"', res.text)
         if token_match:
-            return token_match.group(1)
+            return token_match.group(1), cookie
         else:
             print("[✗] Error: Token not found in the response.")
-            return None
+            return None, cookie
     except Exception as e:
         print(f"[✗] Error: {str(e)}")
-        return None
+        return None, cookie
 
 def single_cookie_mode():
     cookie = input("\n[?] Paste your Facebook Cookie: ").strip()
     print("\n[!] Extracting token, please wait...")
-    token = extract_token(cookie)
+    token, cookie_used = extract_token(cookie)
     if token:
         print(f"\n[✓] Token Extracted: {token}")
+        print(f"[✓] Cookie Used: {cookie_used}")
         with open("fb_token.txt", "w") as f:
-            f.write(token)
-        print("[+] Token saved to fb_token.txt")
+            f.write(f"Cookie: {cookie_used}\nToken: {token}")
+        print("[+] Token and Cookie saved to fb_token.txt")
     else:
-        print("[✗] Failed to extract token. Make sure the cookie is valid and from Facebook business page.")
+        print("[✗] Failed to extract token. Make sure the cookie is valid and from a Facebook business page.")
 
 def file_cookie_mode():
     path = input("\n[?] Enter path to cookie file (e.g., cookies.txt): ").strip()
@@ -64,12 +65,13 @@ def file_cookie_mode():
     for idx, cookie in enumerate(cookies, start=1):
         cookie = cookie.strip()
         print(f"\n[!] Trying cookie #{idx}...")
-        token = extract_token(cookie)
+        token, cookie_used = extract_token(cookie)
         if token:
             print(f"[✓] Token Extracted: {token}")
+            print(f"[✓] Cookie Used: {cookie_used}")
             with open("fb_token.txt", "w") as f:
-                f.write(token)
-            print("[+] Token saved to fb_token.txt")
+                f.write(f"Cookie: {cookie_used}\nToken: {token}")
+            print("[+] Token and Cookie saved to fb_token.txt")
             return
         else:
             print("[✗] Failed. Trying next if available...")
