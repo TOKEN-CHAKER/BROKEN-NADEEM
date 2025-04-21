@@ -1,6 +1,23 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+import os
+import time
+
+def clear():
+    os.system('clear' if os.name != 'nt' else 'cls')
+
+def banner():
+    clear()
+    print("\n")
+    print("██████╗░██████╗░░█████╗░███████╗██╗░░██╗███████╗███╗░░██╗")
+    print("██╔══██╗██╔══██╗██╔══██╗██╔════╝██║░░██║██╔════╝████╗░██║")
+    print("██║░░██║██████╦╝██║░░██║█████╗░░███████║█████╗░░██╔██╗██║")
+    print("██║░░██║██╔══██╗██║░░██║██╔══╝░░██╔══██║██╔══╝░░██║╚████║")
+    print("██████╔╝██████╦╝╚█████╔╝███████╗██║░░██║███████╗██║░╚███║")
+    print("╚═════╝░╚═════╝░░╚════╝░╚══════╝╚═╝░░╚═╝╚══════╝╚═╝░░╚══╝")
+    print("      » FB TOKEN EXTRACTOR - BROKEN NADEEM STYLE «")
+    print("=========================================================\n")
 
 def login_facebook(email, password):
     session = requests.Session()
@@ -23,22 +40,33 @@ def login_facebook(email, password):
     if "save-device" in login.text or "home.php" in login.url:
         print("[✓] Login Successful!")
 
-        # Try to fetch token (basic example, not Graph token)
         cookies = session.cookies.get_dict()
-        print("[!] Session Cookies:", cookies)
+        print("[!] Session Cookies:")
+        for k, v in cookies.items():
+            print(f"  {k}: {v}")
 
-        fb_dtsg_search = session.get("https://mbasic.facebook.com/composer/ocelot/async_loader/?publisher=feed", headers=headers)
-        token_search = re.search(r'"accessToken":"(.*?)"', fb_dtsg_search.text)
+        # Token attempt
+        token_url = "https://mbasic.facebook.com/composer/ocelot/async_loader/?publisher=feed"
+        response = session.get(token_url, headers=headers)
+        token_search = re.search(r'"accessToken":"(.*?)"', response.text)
+
         if token_search:
-            access_token = token_search.group(1)
-            print(f"[✓] Access Token Found:\n{access_token}")
+            token = token_search.group(1)
+            print(f"\n[✓] Access Token:\n{token}")
+            with open("fb_token.txt", "w") as f:
+                f.write(token)
+            print("[+] Token saved to fb_token.txt")
         else:
-            print("[✗] Couldn't find access token, session may require app password or checkpoint.")
-
+            print("\n[✗] Access token not found. Maybe checkpoint or app password needed.")
     else:
-        print("[✗] Login failed! Check credentials or checkpoint block.")
+        print("[✗] Login failed. Wrong credentials or checkpoint lock.")
 
-if __name__ == "__main__":
+def main():
+    banner()
     email = input("[?] Enter Facebook Email: ")
     password = input("[?] Enter Facebook Password: ")
+    print("\n[~] Trying to login...\n")
     login_facebook(email, password)
+
+if __name__ == "__main__":
+    main()
