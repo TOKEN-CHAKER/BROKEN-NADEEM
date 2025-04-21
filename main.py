@@ -62,6 +62,7 @@ def main():
     max_wait = 300  # 5 minutes
     start = time.time()
     attempt = 1
+    is_approved = False
 
     while True:
         print(f"\n[!] Attempt {attempt} - Trying login...")
@@ -76,7 +77,11 @@ def main():
             break
         elif "error_msg" in result and "www.facebook.com" in result["error_msg"]:
             elapsed = time.time() - start
-            if elapsed > max_wait:
+            if not is_approved:
+                slow("[✗] Login Blocked: User must verify their account.", 0.03)
+                slow("[~] Please approve your login. The system will retry automatically once approved.", 0.03)
+                is_approved = True
+            elif elapsed > max_wait:
                 slow("\n[✗] Timed out waiting for approval. Try again later.", 0.04)
                 break
             else:
