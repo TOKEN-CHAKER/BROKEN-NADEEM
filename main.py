@@ -52,6 +52,31 @@ def get_token(email, password):
     except Exception as e:
         return {"error_msg": f"Connection failed: {str(e)}"}
 
+def wait_for_approval(email, password):
+    approved_once = False
+    while True:
+        time.sleep(5)
+        result = get_token(email, password)
+        if "access_token" in result:
+            token = result["access_token"]
+            if approved_once:
+                slow(f"\n[✓] Dobara approval mil gaya!", 0.03)
+            else:
+                slow(f"\n[✓] Approval ke baad token mil gaya!", 0.03)
+            slow(f"[>] Token: {token}", 0.03)
+            with open("fb_token.txt", "w") as f:
+                f.write(token)
+            print("[+] Token 'fb_token.txt' mein save ho gaya hai.")
+            break
+        elif "error_msg" in result and "www.facebook.com" in result["error_msg"]:
+            if not approved_once:
+                slow("[!] Checkpoint detected, approval ka wait ho raha hai...", 0.03)
+                approved_once = True
+            else:
+                slow("[~] Dobara checkpoint laga. Please fir se approval do...", 0.03)
+        else:
+            slow("[✗] Unexpected error or login fail. Retry in 5s...", 0.03)
+
 def main():
     logo()
     email = input("[?] Facebook Email: ")
@@ -74,25 +99,15 @@ def main():
         elif "error_msg" in result:
             error = result["error_msg"]
             if "www.facebook.com" in error:
-                slow("[!] Account pe checkpoint laga hua hai.", 0.04)
-                slow("[~] Manual approval do. Script har 5 second mein check karega...", 0.04)
-                while True:
-                    time.sleep(5)
-                    result = get_token(email, password)
-                    if "access_token" in result:
-                        token = result["access_token"]
-                        slow(f"\n[✓] Approval ke baad token mil gaya!\n[>] Token: {token}", 0.03)
-                        with open("fb_token.txt", "w") as f:
-                            f.write(token)
-                        print("[+] Token 'fb_token.txt' mein save ho gaya hai.")
-                        return
+                wait_for_approval(email, password)
+                return
             else:
                 retry_count += 1
                 slow(f"[✗] Login Failed: {error} (try: {retry_count})", 0.03)
                 time.sleep(2)
         else:
             retry_count += 1
-            slow(f"[✗] Unknown response mila. Retry kar rahe hain... ({retry_count})", 0.03)
+            slow(f"[✗] Unknown response. Retry... ({retry_count})", 0.03)
             time.sleep(2)
 
     print("\n[✗] 5 baar try kar liya. Login nahi ho paaya. Check karo credentials ya Facebook restriction.")
