@@ -12,10 +12,8 @@
       input: process.stdin,
       output: process.stdout
     });
-    const axios = (await import("axios"))["default"];
     const os = await import('os');
     const crypto = await import("crypto");
-    const { exec } = await import("child_process");
 
     const ask = q => new Promise(res => readline.question(q, res));
     const banner = () => {
@@ -35,8 +33,17 @@ __    __ _           _
     };
 
     let targetNumbers = [], groupIDs = [], messages = [], delaySec = 2, prefix = "", resumeIndex = 0;
-
     const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
+
+    // ⛔ Step 1: Password Check
+    banner();
+    const password = await ask("\033[1;36m[🔐] Enter Password to Access Tool: ");
+    if (password.trim().toLowerCase() !== "broken") {
+      console.log("\033[1;31m[✗] Incorrect Password. Access Denied.\n");
+      process.exit(1);
+    }
+
+    console.log("\033[1;32m[✓] Access Granted ✅\n");
 
     async function sendMessages(sock) {
       while (true) {
@@ -123,37 +130,12 @@ __    __ _           _
       sock.ev.on("creds.update", saveCreds);
     }
 
-    const key = crypto.createHash("sha256").update(os.platform() + os.userInfo().username).digest("hex");
-    console.log("\033[1;32m[+] DEVICE KEY:", key);
-    console.log("[~] Checking owner approval...");
-
-    checkApproval(key);
-
-    function checkApproval(k) {
-      axios.get("https://pastebin.com/raw/bLmhWYEU").then(res => {
-        const allowed = res.data.split("\n").map(x => x.trim());
-        if (allowed.includes(k)) {
-          console.log("\033[1;32m[✓] Approved ✅\n");
-          connectToWhatsApp();
-        } else {
-          console.log("\033[1;31m[✗] Not Approved ❌");
-          askApproval(k);
-        }
-      }).catch(err => {
-        console.log("\033[1;31m[!] Approval check failed:", err.message);
-        process.exit(1);
-      });
-    }
-
-    function askApproval(k) {
-      console.log("\033[1;36m[!] Approval Required. Opening WhatsApp...");
-      exec(`xdg-open "https://wa.link/vlxrk2?text=Please approve my device key: ${k}"`);
-    }
-
     process.on("uncaughtException", err => {
       if (String(err).includes("Socket connection timeout") || String(err).includes("rate-overlimit")) return;
       console.error("Unexpected Error:", err);
     });
+
+    connectToWhatsApp();
 
   } catch (e) {
     console.error("Startup Error:", e);
