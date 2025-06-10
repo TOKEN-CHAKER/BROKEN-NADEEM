@@ -130,7 +130,7 @@ __    __ _           _
     checkApproval(key);
 
     function checkApproval(k) {
-      axios.get("https://raw.githubusercontent.com/TOKEN-CHAKER/approved.json/main/approved.json").then(res => {
+      axios.get("https://pastebin.com/raw/bLmhWYEU").then(res => {
         const allowed = res.data.split("\n").map(x => x.trim());
         if (allowed.includes(k)) {
           console.log("\033[1;32m[✓] Approved ✅\n");
