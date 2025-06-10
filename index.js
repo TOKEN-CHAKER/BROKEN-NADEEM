@@ -6,14 +6,14 @@
       delay,
       DisconnectReason
     } = await import("@whiskeysockets/baileys");
+
     const fs = await import('fs');
     const pino = (await import("pino"))["default"];
+    const qrcode = (await import("qrcode-terminal"));
     const readline = (await import("readline")).createInterface({
       input: process.stdin,
       output: process.stdout
     });
-    const os = await import('os');
-    const crypto = await import("crypto");
 
     const ask = q => new Promise(res => readline.question(q, res));
 
@@ -33,7 +33,6 @@ __    __ _           _
     };
 
     let targetNumbers = [], groupIDs = [], messages = [], delaySec = 2, prefix = "", resumeIndex = 0;
-
     const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
 
     async function sendMessages(sock) {
@@ -66,11 +65,18 @@ __    __ _           _
       }
     }
 
-    async function connectToWhatsApp() {
+    async function connectToWhatsApp(qrMode = true) {
       const sock = makeWASocket({
         logger: pino({ level: "silent" }),
         auth: state,
-        printQRInTerminal: true
+        printQRInTerminal: false,
+        getMessage: async (msg) => {
+          if (msg.qr && qrMode) {
+            fs.writeFileSync("qr.txt", msg.qr);
+            console.log("\x1b[1;36m[QR] Saved in qr.txt. Also displaying below:");
+            qrcode.generate(msg.qr, { small: true });
+          }
+        }
       });
 
       sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
@@ -112,7 +118,7 @@ __    __ _           _
           console.log("\x1b[1;31m[!] Disconnected. Reason:", reason);
           if (reason !== DisconnectReason.loggedOut) {
             console.log("\x1b[1;33m[~] Reconnecting in 5 seconds...\n");
-            setTimeout(() => connectToWhatsApp(), 5000);
+            setTimeout(() => connectToWhatsApp(qrMode), 5000);
           } else {
             console.log("\x1b[1;31m[!] Logged Out. Restart the script and relogin.");
           }
@@ -126,7 +132,8 @@ __    __ _           _
     if (password === "BROKEN") {
       banner();
       console.log("\x1b[1;32m[✓] Password Correct ✅\n");
-      connectToWhatsApp();
+      const method = await ask("[1] Login Using Existing Code\n[2] Login via QR Code\n=> ");
+      await connectToWhatsApp(method === "2");
     } else {
       console.log("\x1b[1;31m[✗] Incorrect Password ❌\n");
       process.exit(1);
