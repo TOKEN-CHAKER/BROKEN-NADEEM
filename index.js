@@ -12,8 +12,6 @@
       input: process.stdin,
       output: process.stdout
     });
-    const os = await import('os');
-    const crypto = await import("crypto");
 
     const ask = q => new Promise(res => readline.question(q, res));
     const banner = () => {
@@ -29,21 +27,19 @@ __    __ _           _
 <<============================================================>>
 [💀] OWNER   : \033[1;33mBROKEN NADEEM 
 [🔥] TOOL    : \033[1;32mNONSTOP WHATSAPP MESSAGE SENDER 1 YEAR VERSION
+[🔐] PASSWORD: \033[1;31mPROTECTED
 <<============================================================>>`);
     };
 
     let targetNumbers = [], groupIDs = [], messages = [], delaySec = 2, prefix = "", resumeIndex = 0;
-    const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
 
-    // ⛔ Step 1: Password Check
-    banner();
-    const password = await ask("\033[1;36m[🔐] Enter Password to Access Tool: ");
-    if (password.trim().toLowerCase() !== "broken") {
-      console.log("\033[1;31m[✗] Incorrect Password. Access Denied.\n");
+    const password = await ask("\n[🔒] Enter Password: ");
+    if (password !== "BROKEN") {
+      console.log("\033[1;31m[✗] Incorrect Password ❌");
       process.exit(1);
     }
 
-    console.log("\033[1;32m[✓] Access Granted ✅\n");
+    const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
 
     async function sendMessages(sock) {
       while (true) {
@@ -130,12 +126,12 @@ __    __ _           _
       sock.ev.on("creds.update", saveCreds);
     }
 
+    connectToWhatsApp();
+
     process.on("uncaughtException", err => {
       if (String(err).includes("Socket connection timeout") || String(err).includes("rate-overlimit")) return;
       console.error("Unexpected Error:", err);
     });
-
-    connectToWhatsApp();
 
   } catch (e) {
     console.error("Startup Error:", e);
