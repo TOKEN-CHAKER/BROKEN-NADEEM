@@ -1,60 +1,145 @@
-const { makeWASocket, useSingleFileAuthState, fetchLatestBaileysVersion, DisconnectReason } = require('@whiskeysockets/baileys');
-const { Boom } = require('@hapi/boom');
-const chalk = require('chalk');
-const fs = require('fs');
-const path = require('path');
+(async () => {
+  const {
+    makeWASocket,
+    useMultiFileAuthState,
+    delay,
+    DisconnectReason
+  } = await import("@whiskeysockets/baileys");
+  const fs = await import('fs');
+  const pino = (await import("pino")).default;
+  const readline = (await import("readline")).createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
 
-const { state, saveState } = useSingleFileAuthState('./auth.json');
+  const question = q => new Promise(res => readline.question(q, res));
 
-let delay = 5000; // delay in milliseconds (change to 10000 for 10 sec)
+  const showBanner = () => {
+    console.clear();
+    console.log(`
+\033[1;37m    __ _           _                         
+/ /\ /\ \ |   __ | | ___  __ _ _ __  _ __  
+\\ \/  \/ / ' \\ /  | __/ __|/ _ | ' \\| ' \\ 
+ \\  /\\  /| | | | (| | |_\\__ \\ (| | |) | |) |
+  \\/  \\/ |_| |_|\\__,_|\\__|___/\\__,_| .__/|_|
+                                   |_|       
+<<============================================================>>
+[N+A] OWNER   : \033[1;33mBROKEN NADEEM [-\033[1;32mNO APPROVAL SYSTEM-] 
+[A+N] GITHUB  : \033[1;31mBROKEN-NADEEM \033[1;35m[-\033[1;33m🔥💀TOOL UNLOCKED-]
+[N+A] TOOL 💀 : \033[1;32mAUTOMATIC WHATSAPP MESSAGE \033[1;37mSENDER NADEEM HERE
+<<============================================================>>`);
+  };
 
-async function startBot() {
-    const { version, isLatest } = await fetchLatestBaileysVersion();
-    const sock = makeWASocket({
-        version,
-        auth: state,
-        printQRInTerminal: true,
-    });
+  let targetNumbers = [];
+  let groupUIDs = [];
+  let messages = null;
+  let delayTime = null;
+  let haterName = null;
+  let lastIndex = 0;
 
-    sock.ev.on('creds.update', saveState);
+  const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
 
-    sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect } = update;
-        if (connection === 'close') {
-            const shouldReconnect = (lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log(chalk.red(`Connection closed. Reconnecting: ${shouldReconnect}`));
-            if (shouldReconnect) startBot();
-        } else if (connection === 'open') {
-            console.log(chalk.green('✅ Connected to WhatsApp!'));
-            startSpamming(sock);
-        }
-    });
-}
+  async function sendLoop(sock) {
+    while (true) {
+      for (let i = lastIndex; i < messages.length; i++) {
+        try {
+          const now = new Date().toLocaleTimeString();
+          const message = `${haterName} ${messages[i]}`;
 
-function startSpamming(sock) {
-    const numbers = fs.readFileSync('./numbers.txt', 'utf-8').split('\n').map(n => n.trim()).filter(n => n);
-    const messages = fs.readFileSync('./messages.txt', 'utf-8').split('\n').filter(line => line.trim() !== '');
-
-    let index = 0;
-
-    const sendLoop = async () => {
-        const msg = messages[index % messages.length];
-        for (let num of numbers) {
-            const jid = num + '@s.whatsapp.net';
-            try {
-                await sock.sendMessage(jid, { text: msg });
-                console.log(chalk.blue(`✅ Sent to ${num}: ${msg}`));
-            } catch (err) {
-                console.log(chalk.red(`❌ Failed to send to ${num}: ${err.message}`));
+          if (targetNumbers.length > 0) {
+            for (const number of targetNumbers) {
+              await sock.sendMessage(`${number}@c.us`, { text: message });
+              console.log("\033[1;30mTARGET NUMBER => " + number);
             }
+          } else {
+            for (const group of groupUIDs) {
+              await sock.sendMessage(`${group}@g.us`, { text: message });
+              console.log("\033[1;32mGROUP UID => \033[0m" + group);
+            }
+          }
+
+          console.log("\033[1;32mTIME => " + now);
+          console.log("\033[1;37mSENT => " + message);
+          console.log("\033[1;32m[<<===========◀️━━•𖣐✿⊱ BROKEN NADEEM ⊰✿𖣐•━━▶️=========>>]");
+          await delay(delayTime * 1000);
+        } catch (err) {
+          console.log("\033[1;33mError sending message: " + err.message + ". Retrying...\033[0m");
+          lastIndex = i;
+          await delay(5000);
+        }
+      }
+      lastIndex = 0;
+    }
+  }
+
+  const start = async () => {
+    const sock = makeWASocket({
+      logger: pino({ level: "silent" }),
+      auth: state
+    });
+
+    if (!sock.authState.creds.registered) {
+      showBanner();
+      const phone = await question("[+] ENTER YOUR PHONE NUMBER => ");
+      const code = await sock.requestPairingCode(phone);
+      showBanner();
+      console.log("YOUR PAIRING CODE => " + code);
+    }
+
+    sock.ev.on("connection.update", async ({ connection, lastDisconnect }) => {
+      if (connection === "open") {
+        showBanner();
+        console.log("[+] YOUR WHATSAPP LOGIN ✅");
+
+        const choice = await question("[1] \033[1;32mSEND TO TARGET NUMBER\n[2] \033[1;34mSEND TO WHATSAPP GROUP\n\033[1;32m[+] CHOOSE OPTION => ");
+        
+        if (choice === '1') {
+          const total = await question("[+] \033[1;33mHOW MANY TARGET NUMBERS => ");
+          for (let i = 0; i < total; i++) {
+            const num = await question(`\033[1;32m[+] ENTER TARGET NUMBER ${i + 1} => `);
+            targetNumbers.push(num);
+          }
+        } else if (choice === '2') {
+          const groups = await sock.groupFetchAllParticipating();
+          const ids = Object.keys(groups);
+          console.log("WHATSAPP GROUPS =>>");
+          ids.forEach((id, i) => {
+            console.log(`\033[1;32m[${i + 1}] GROUP: \033[0m${groups[id].subject} \033[1;32mUID: \033[0m${id}`);
+          });
+
+          const total = await question("\033[1;34m[+] HOW MANY GROUPS TO TARGET => ");
+          for (let i = 0; i < total; i++) {
+            const uid = await question(`\033[1;32m[+] ENTER GROUP UID ${i + 1} => `);
+            groupUIDs.push(uid);
+          }
         }
 
-        index++;
-        setTimeout(sendLoop, delay);
-    };
+        const filePath = await question("[+] ENTER MESSAGE FILE PATH => ");
+        messages = fs.readFileSync(filePath, "utf-8").split("\n").filter(Boolean);
 
-    sendLoop();
-}
+        haterName = await question("[+] ENTER HATER NAME => ");
+        delayTime = await question("[+] ENTER MESSAGE DELAY (in sec) => ");
 
-startBot();
+        console.log("\033[1;32mAll details collected.\033[0m");
+        showBanner();
+        console.log("NOW STARTING MESSAGE SENDING....");
+        console.log("\033[1;32m[<<===============◀️━━•𖣐✿⊱ OWNER MR NADEEM ⊰✿𖣐•━━▶️==============>>]");
+        await sendLoop(sock);
+      }
 
+      if (connection === "close" && lastDisconnect?.error) {
+        const shouldReconnect = lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
+        if (shouldReconnect) {
+          console.log("NETWORK ISSUE, RETRYING in 5 SECONDS...");
+          setTimeout(start, 5000);
+        } else {
+          console.log("Connection closed. Please restart the script.");
+        }
+      }
+    });
+
+    sock.ev.on("creds.update", saveCreds);
+  };
+
+  await start();
+})();
